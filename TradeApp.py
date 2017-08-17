@@ -56,18 +56,10 @@ def bfx():
     data = data.read().decode("utf-8")
     data = json.loads(data)
     data = pd.DataFrame(data)
-
     # Reverse data, make unix timestamps proper size and make new column for datestamp
     data = data.reindex(index=data.index[::-1])
     data[1] = data[1]/1000
     data[4] = np.array(data[1]).astype("datetime64[s]")
-    """
-        # Separate buys and sells
-        buys = data[(data[2]>0)]
-        buyDates = (buys[4]).tolist()
-        sells = data[(data[2]<0)]
-        sellDates = (sells[4]).tolist()
-    """
     return data
 
 def Animate(i):
@@ -378,18 +370,6 @@ class ButtonBar(tk.Frame):
         button1.pack()
         button2.pack()
 
-""" Sample Page
-class PageOne(tk.Frame):
-    def __init__(self,parent,controller):
-        tk.Frame.__init__(self,parent)
-
-        label = tk.Label(self,text="Page 1",font=LARGE_FONT)
-        label.pack(pady=10,padx=10)
-
-        button1 = ttk.Button(self,text="Back home",
-                            command=lambda: controller.show_frame(StartPage))
-        button1.pack()
-"""
 if __name__ == "__main__":
     app = TradeApp()
     app.geometry("1280x720")
