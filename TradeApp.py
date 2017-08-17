@@ -11,7 +11,8 @@ from matplotlib import style
 import pandas as pd
 import numpy as np
 
-import urllib, json, os, datetime
+import multiprocessing as mp
+import urllib, json, os, datetime, configparser, ast
 from functools import partial
 
 CONFIG = "TAConfig.cfg"
@@ -41,10 +42,14 @@ INDICATORS = {'sma':{'labels':['Periods'],'defaults':[10]},'ema':{'labels':['Per
             'rsi':{'labels':['Periods'],'defaults':[10]},'macd':{'labels':['EMA L','EMA S','Signal'],'defaults':[26,12,9]}}
 indicators = {'top':[],'graph':[],'bottom':[]}
 
+datastream = True
+scale = 'lin'
+
 style.use("fivethirtyeight")
 f = Figure()
 a = f.add_subplot(111)
 
+# Chart defs
 def bfx():
     dataLink = "https://api.bitfinex.com/v2/trades/tBTCUSD/hist?limit_trades=10000"
     data = urllib.request.urlopen(dataLink)
@@ -82,8 +87,53 @@ def Animate(i):
     a.legend(bbox_to_anchor=(0, 1.02, 1, 0.102), loc=3,
              ncol=2, borderaxespad=0)
 
+def Stream():
+    global datastream
+    if datastream:
+        datastream = False
+        print("Datastream paused")
+    else:
+        datastream = True
+        print("Datastream resumed")
+
+def Scale():
+    global scale
+    if scale=='lin':
+        scale = 'log'
+        print("Switched to logarithmic scale")
+    else:
+        scale = 'lin'
+        print("Switched to linear scale")
+
+# Application commands
 def Quit():
     app.destroy()
+
+def Config(cmd):
+    config = configparser.ConfigParser()
+    global exchange
+    global pair
+    global timeframe
+    global samplesize
+    global candlewidth
+    global indicators
+    global scale
+    if cmd=='save':
+        config['CONFIG'] = {'EXCHANGE':exchange,'PAIR':pair,'TIMEFRAME':timeframe,
+        'SAMPLESIZE':samplesize,'CANDLEWIDTH':candlewidth,'INDICATORS':indicators,'SCALE':scale}
+        with open(CONFIG,"w") as c:
+            config.write(c)
+        Popup("Config saved!")
+    elif cmd=='load':
+        config.read(CONFIG)
+        exchange = ast.literal_eval(config['CONFIG']['EXCHANGE'])
+        pair = config['CONFIG']['PAIR']
+        timeframe = ast.literal_eval(config['CONFIG']['TIMEFRAME'])
+        samplesize = ast.literal_eval(config['CONFIG']['SAMPLESIZE'])
+        candlewidth = ast.literal_eval(config['CONFIG']['CANDLEWIDTH'])
+        indicators = ast.literal_eval(config['CONFIG']['INDICATORS'])
+        scale = config['CONFIG']['SCALE']
+        Popup("Config loaded!")
 
 def Popup(msg):
     popup = tk.Tk()
@@ -94,6 +144,7 @@ def Popup(msg):
     B1.pack()
     popup.mainloop()
 
+# Configuration commands
 def ChangeExchange(e):
     global exchange
     global updateinterval
@@ -183,12 +234,10 @@ class TradeApp(tk.Tk):
         bb = ButtonBar(container, self)
         self.frames[ButtonBar] = bb
         bb.grid(row=0,column=0,sticky="nsw")
-        #
         for F in (GraphPage, TradePage):
             frame = F(container, self)
             self.frames[F] = frame
             frame.grid(row=0,column=1,sticky="nsew")
-        #
         if os.path.exists(CONFIG):
             self.show_frame(ButtonBar)
             self.show_frame(GraphPage)
@@ -204,7 +253,8 @@ class MenuBar(tk.Menu):
         tk.Menu.__init__(self, parent)
 
         filemenu = tk.Menu(self, tearoff=0)
-        filemenu.add_command(label="Save config", command = lambda: Popup("Not implemented yet!"))
+        filemenu.add_command(label="Save config", command=partial(Config,'save'))
+        filemenu.add_command(label="Load config", command=partial(Config,'load'))
         filemenu.add_separator()
         filemenu.add_command(label="Exit", command=Quit)
 
@@ -237,11 +287,32 @@ class MenuBar(tk.Menu):
         indicatormenu.add_command(label="RSI", command=partial(AddIndicator,'rsi','bottom'))
         indicatormenu.add_command(label="MACD", command=partial(AddIndicator,'macd','bottom'))
 
+        tradingmenu = tk.Menu(self, tearoff=1)
+        tradingmenu.add_command(label='Manual', command=partial(Popup, "Not yet implemented"))
+        tradingmenu.add_command(label='Auto', command=partial(Popup, "Not yet implemented"))
+        tradingmenu.add_separator()
+        tradingmenu.add_command(label='Quick Buy', command=partial(Popup, "Not yet implemented"))
+        tradingmenu.add_command(label='Quick Sell', command=partial(Popup, "Not yet implemented"))
+        tradingmenu.add_command(label='Quick Trade Setup', command=partial(Popup, "Not yet implemented"))
+
+        controlmenu = tk.Menu(self, tearoff=1)
+        controlmenu.add_command(label='Start/Stop Stream', command=partial(Stream))
+        controlmenu.add_command(label='Switch Scale', command=partial(Scale))
+        controlmenu.add_command(label='Drawing Tools', command=partial(Popup, "Not yet implemented"))
+
+        helpmenu = tk.Menu(self, tearoff=0)
+        helpmenu.add_command(label='Tutorial', command=partial(Popup, "Not yet implemented"))
+        helpmenu.add_command(label='Help', command=partial(Popup, "Not yet implemented"))
+        helpmenu.add_command(label='About', command=partial(Popup, "Not yet implemented"))
+
         self.add_cascade(label="File", menu=filemenu)
         self.add_cascade(label="Exchange", menu=exchangemenu)
         self.add_cascade(label="Time Frame", menu=timeframemenu)
         self.add_cascade(label="Sample Size", menu=samplesizemenu)
         self.add_cascade(label="Indicators", menu=indicatormenu)
+        self.add_cascade(label="Trading", menu=tradingmenu)
+        self.add_cascade(label='Chart Control', menu=controlmenu)
+        self.add_cascade(label='Help', menu=helpmenu)
 
 class StartPage(tk.Frame):
     def __init__(self,parent,controller):
@@ -258,10 +329,9 @@ class StartPage(tk.Frame):
         button2 = ttk.Button(self,text="Disagree",
                             command=Quit)
         button2.pack()
-
     def startup(self,controller,*args):
-        config = open(CONFIG,"w")
-        config.write("## TRADEAPP CONFIG ##\n## CREATED {} ##".format(datetime.datetime.now()))
+        Config('save')
+        controller.show_frame(ButtonBar)
         controller.show_frame(GraphPage)
 
 class GraphPage(tk.Frame):
@@ -324,4 +394,6 @@ if __name__ == "__main__":
     app = TradeApp()
     app.geometry("1280x720")
     ani = animation.FuncAnimation(f, Animate, interval=5000)
-    app.mainloop()
+    t = mp.Process(target=app.mainloop)
+    t.start()
+    t.join()

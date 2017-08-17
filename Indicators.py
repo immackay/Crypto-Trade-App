@@ -1,11 +1,12 @@
-def MACD():
+def MACD(data, long, small, signal):
+
     pass
 
-def RSI():
+def RSI(data, periods):
     pass
 
-def EMA():
+def EMA(data, periods):
     pass
 
-def SMA():
+def SMA(data, periods):
     pass
