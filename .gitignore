@@ -2,3 +2,4 @@
 data/
 
 TAConfig\.cfg
+.DS_Store

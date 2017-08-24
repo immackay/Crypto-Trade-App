@@ -7,6 +7,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 from matplotlib.figure import Figure
 import matplotlib.animation as animation
 from matplotlib import style
+from matplotlib import pyplot as plt # Breaks Tkinter?
 
 import pandas as pd
 import numpy as np
@@ -14,6 +15,8 @@ import numpy as np
 import multiprocessing as mp
 import urllib, json, os, datetime, configparser, ast
 from functools import partial
+
+from Periodic import Periodic
 
 CONFIG = "TAConfig.cfg"
 LARGE_FONT = ("Verdana", 12)
@@ -43,11 +46,14 @@ INDICATORS = {'sma':{'labels':['Periods'],'defaults':[10]},'ema':{'labels':['Per
 indicators = {'top':[],'graph':[],'bottom':[]}
 
 datastream = True
+datatype = 'candle'
 scale = 'lin'
 
 style.use("fivethirtyeight")
-f = Figure()
-a = f.add_subplot(111)
+f = plt.Figure()
+#f = Figure()
+#a = f.add_subplot(111)
+
 
 # Chart defs
 def bfx():
@@ -62,7 +68,43 @@ def bfx():
     data[4] = np.array(data[1]).astype("datetime64[s]")
     return data
 
-def Animate(i):
+#data = Periodic(5, bfx) # will be set to Exchange.returnTradeHistory (tick) or Exchange.returnChartData (candle)
+
+def loadBackupData():
+    data = pd.read_csv()
+    data = data.drop("quoteVolume", "weightedAverage")
+    data["datestamp"] = np.array(data["date"]).astype("datetime64[s]")
+    dates = (data["datestamp"]).tolist()
+    return data, dates
+
+def Animate():
+    # debug
+    data, dates = loadBackupData()
+    #
+    volume = data["volume"].apply(float).tolist()
+    a = plt.subplot2grid((6,4), (0,0), rowspan = 5, colspan = 4)
+    a2 = plt.subplot2grid((6,4), (5,0), rowspan = 1, colspan = 4, sharex=a)
+    
+    a.clear()
+
+    a.plot_date(dateStamps, data["price"], lightColor, label="buys")
+
+    a2.fill_between(dateStamps, 0, volume, facecolor = darkColor)
+
+    a.xaxis.set_major_locator(mticker.MaxNLocator(5))
+    a.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d %H:M:S"))
+                        
+                        
+
+    a.legend(bbox_to_anchor=(0, 1.02, 1, .102), loc=3,
+                                 ncol=2, borderaxespad=0)
+
+    title = "Poloniex BTCUSDT Prices\nLast Price: "+str(data["price"][0])
+    a.set_title(title)
+    
+
+"""
+def Animate(i): #old
     data = bfx()
     # Separate buys and sells
     buys = data[(data[2]>0)]
@@ -78,6 +120,9 @@ def Animate(i):
     a.set_title(title)
     a.legend(bbox_to_anchor=(0, 1.02, 1, 0.102), loc=3,
              ncol=2, borderaxespad=0)
+"""
+
+
 
 def Stream():
     global datastream
@@ -115,7 +160,7 @@ def Config(cmd):
         'SAMPLESIZE':samplesize,'CANDLEWIDTH':candlewidth,'INDICATORS':indicators,'SCALE':scale}
         with open(CONFIG,"w") as c:
             config.write(c)
-        Popup("Config saved!")
+        #Popup("Config saved!") ### Breaks app on initial startup for some reason, destroys mainloop?
     elif cmd=='load':
         config.read(CONFIG)
         exchange = ast.literal_eval(config['CONFIG']['EXCHANGE'])
@@ -199,7 +244,7 @@ def AddIndicator(ind, loc):
         b.grid(row=x,column=0,columnspan=2)
         tk.mainloop()
 
-def RemIndicator(ind, loc):
+def RemIndicator(ind, loc): # Not implemented
     pass
 
 class TradeApp(tk.Tk):
@@ -374,6 +419,7 @@ if __name__ == "__main__":
     app = TradeApp()
     app.geometry("1280x720")
     ani = animation.FuncAnimation(f, Animate, interval=5000)
-    t = mp.Process(target=app.mainloop)
-    t.start()
-    t.join()
+    #t = mp.Process(target=app.mainloop) ### Breaks on mac os
+    app.mainloop()
+    #t.start()
+    #t.join()
