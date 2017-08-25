@@ -11,7 +11,13 @@ Created on Wed Aug 23 13:32:46 2017
 
 savings = 0
 investments = 0
+investrate = 0.05
+job = ''
+wage = 0
+hours = 0
+salary = 0
 finish = False
+yearspassed = 0
 
 def simpleCompoundInterest(principle, rate, amount):
     ret = principle*((1 + rate)**amount)
@@ -23,27 +29,37 @@ def complexCompoundInterest(principle, rate, compound, amount):
     ret = principle*((1 + r)**t)
     return ret
 
-def repeat(amount, )
+#def repeat(amount, ):
 
 def hourly(wage, hours):
     pass
-    
+
 def salary(amount):
     pass
 
 def job():
-    pass
+    global job
+    global wage
+    global hours
+    global salary
+    job = input("Is your job this year wage or salary based? w/s:")
+    if job in ('w', 'W'):
+        wage = input("What is your hourly wage?")
+        hours = input("How many hours do you work each week?")
+    elif job in ('s', 'S'):
+
+    else:
+        print("Error, try again")
+        job()
 
 def invest():
     global savings
     global investments
     print("Your savings are: ${}".format(savings))
     print("Your investments total: ${}".format(investments))
-    a = float(input("How much money would you like to move to investments:"))
+    a = float(input("How much money would you like to move to investments?"))
     investments += a
     savings -= a
-    
-    
 
 def finished():1
     global finish
@@ -54,7 +70,9 @@ def finished():1
         pass
 
 def loop():
+    job():
     invest()
+    print(yearspassed)
     finished()
     if finish:
         return
@@ -62,4 +80,7 @@ def loop():
         loop()
 
 if __name__ == "__main__":
+    savings = input("How much money do you have in savings currently?")
+    investments = input("How much money do you have in investments currently?")
+    investrate = (input("At what percentage do your investments grow?"))/100
     loop()
