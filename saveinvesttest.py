@@ -47,7 +47,7 @@ def job():
         wage = input("What is your hourly wage?")
         hours = input("How many hours do you work each week?")
     elif job in ('s', 'S'):
-
+        salary = input("What is your yearly salary?")
     else:
         print("Error, try again")
         job()
@@ -61,7 +61,7 @@ def invest():
     investments += a
     savings -= a
 
-def finished():1
+def finished():
     global finish
     f = input("Are you finished? Y/n:")
     if f in ("Y", "y"):
@@ -70,7 +70,7 @@ def finished():1
         pass
 
 def loop():
-    job():
+    job()
     invest()
     print(yearspassed)
     finished()
@@ -82,5 +82,5 @@ def loop():
 if __name__ == "__main__":
     savings = input("How much money do you have in savings currently?")
     investments = input("How much money do you have in investments currently?")
-    investrate = (input("At what percentage do your investments grow?"))/100
+    investrate = (float(input("At what percentage do your investments grow?")))/100
     loop()
